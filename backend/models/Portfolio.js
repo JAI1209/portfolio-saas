@@ -7,16 +7,20 @@ const portfolioSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+
     description: {
       type: String,
     },
+
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
 module.exports = mongoose.model("Portfolio", portfolioSchema);

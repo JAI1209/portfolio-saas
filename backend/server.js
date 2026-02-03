@@ -17,6 +17,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/portfolios", portfolioRoutes);
 
+
 // 🩺 Health check
 app.get("/", (req, res) => {
   res.send("API is running");

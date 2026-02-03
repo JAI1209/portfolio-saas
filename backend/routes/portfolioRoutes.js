@@ -1,16 +1,19 @@
 const express = require("express");
+const router = express.Router();
+
 const authMiddleware = require("../middleware/authMiddleware");
 const {
   createPortfolio,
-  getMyPortfolios
+  getMyPortfolios,
 } = require("../controllers/portfolioController");
 
-const router = express.Router();
+// 🔐 All portfolio routes are private
+router.use(authMiddleware);
 
-// CREATE
-router.post("/", authMiddleware, createPortfolio);
+// 📌 Create portfolio
+router.post("/", createPortfolio);
 
-// READ (✅ ADD THIS)
-router.get("/", authMiddleware, getMyPortfolios);
+// 📌 Get logged-in user's portfolios
+router.get("/", getMyPortfolios);
 
 module.exports = router;
