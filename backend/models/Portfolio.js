@@ -10,6 +10,7 @@ const portfolioSchema = new mongoose.Schema(
 
     description: {
       type: String,
+      trim: true,
     },
 
     user: {
@@ -17,10 +18,14 @@ const portfolioSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+
+    status: {
+      type: String,
+      enum: ["draft", "published"],
+      default: "draft", // 🚨 CRITICAL
+    },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 module.exports = mongoose.model("Portfolio", portfolioSchema);

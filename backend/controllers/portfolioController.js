@@ -159,3 +159,68 @@ exports.updatePortfolioStatus = async (req, res) => {
     res.status(500).json({ message: "Failed to update portfolio status" });
   }
 };
+
+
+
+
+/**
+ * ===============================
+ * ADMIN: Update Portfolio Status
+ * ===============================
+ */
+exports.updatePortfolioStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    if (!["draft", "published"].includes(status)) {
+      return res.status(400).json({
+        message: "Invalid status value",
+      });
+    }
+
+    const portfolio = await Portfolio.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    ).populate("user", "name email");
+
+    if (!portfolio) {
+      return res.status(404).json({
+        message: "Portfolio not found",
+      });
+    }
+
+    res.json({
+      message: "Portfolio status updated",
+      portfolio,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to update portfolio status",
+    });
+  }
+};
+
+
+
+/**
+ * ===============================
+ * PUBLIC: Get Published Portfolios
+ * ===============================
+ */
+exports.getPublishedPortfolios = async (req, res) => {
+  try {
+    const portfolios = await Portfolio.find({ status: "published" })
+      .populate("user", "name")
+      .sort({ createdAt: -1 });
+
+    res.json({
+      count: portfolios.length,
+      portfolios,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to fetch published portfolios",
+    });
+  }
+};

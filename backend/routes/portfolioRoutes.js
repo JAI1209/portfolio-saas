@@ -7,47 +7,21 @@ const roleMiddleware = require("../middleware/roleMiddleware");
 const {
   createPortfolio,
   getMyPortfolios,
-  updatePortfolio,
-  deletePortfolio,
-  getAllPortfoliosAdmin,
   updatePortfolioStatus,
+  getPublishedPortfolios,
 } = require("../controllers/portfolioController");
 
-// 🔐 All portfolio routes are protected
+// 🌍 PUBLIC — no auth
+router.get("/public", getPublishedPortfolios);
+
+// 🔐 Everything below requires authentication
 router.use(authMiddleware);
 
-/**
- * ===============================
- * USER ROUTES
- * ===============================
- */
-
-// Create portfolio
+// 👤 USER routes
 router.post("/", createPortfolio);
-
-// Get logged-in user's portfolios
 router.get("/", getMyPortfolios);
 
-// Update portfolio (owner only)
-router.put("/:id", updatePortfolio);
-
-// Delete portfolio (owner only)
-router.delete("/:id", deletePortfolio);
-
-/**
- * ===============================
- * ADMIN ROUTES
- * ===============================
- */
-
-// Admin: view ALL portfolios
-router.get(
-  "/admin/all",
-  roleMiddleware("admin"),
-  getAllPortfoliosAdmin
-);
-
-// Admin: update portfolio status (draft / published)
+// 👑 ADMIN routes
 router.patch(
   "/admin/:id/status",
   roleMiddleware("admin"),
