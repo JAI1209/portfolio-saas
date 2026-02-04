@@ -1,19 +1,17 @@
 const express = require("express");
+const router = express.Router();
+
 const authMiddleware = require("../middleware/authMiddleware");
 const roleMiddleware = require("../middleware/roleMiddleware");
+const {
+  getAllPortfoliosAdmin,
+} = require("../controllers/portfolioController");
 
-const router = express.Router(); // ✅ THIS WAS MISSING
+// 🔐 Admin-only routes
+router.use(authMiddleware);
+router.use(roleMiddleware("admin"));
 
-router.get(
-  "/dashboard",
-  authMiddleware,
-  roleMiddleware("admin"),
-  (req, res) => {
-    res.json({
-      message: "Welcome Admin 👑",
-      user: req.user,
-    });
-  }
-);
+// 📌 GET ALL portfolios (ADMIN)
+router.get("/portfolios", getAllPortfoliosAdmin);
 
 module.exports = router;
