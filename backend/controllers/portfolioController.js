@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Portfolio = require("../models/Portfolio");
 
 /**
@@ -16,12 +17,13 @@ exports.createPortfolio = async (req, res) => {
     const portfolio = await Portfolio.create({
       title,
       description,
-      status: status || "draft", // 👈 default handled safely
+      status: status || "draft",
       user: req.user._id,
     });
 
     res.status(201).json(portfolio);
   } catch (error) {
+    console.error("❌ createPortfolio:", error);
     res.status(500).json({ message: "Failed to create portfolio" });
   }
 };
@@ -33,9 +35,13 @@ exports.createPortfolio = async (req, res) => {
  */
 exports.getMyPortfolios = async (req, res) => {
   try {
-    const portfolios = await Portfolio.find({ user: req.user._id });
+    const portfolios = await Portfolio.find({ user: req.user._id }).sort({
+      createdAt: -1,
+    });
+
     res.json(portfolios);
   } catch (error) {
+    console.error("❌ getMyPortfolios:", error);
     res.status(500).json({ message: "Failed to fetch portfolios" });
   }
 };
@@ -47,8 +53,14 @@ exports.getMyPortfolios = async (req, res) => {
  */
 exports.getPortfolioById = async (req, res) => {
   try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid portfolio ID" });
+    }
+
     const portfolio = await Portfolio.findOne({
-      _id: req.params.id,
+      _id: id,
       user: req.user._id,
     });
 
@@ -58,6 +70,7 @@ exports.getPortfolioById = async (req, res) => {
 
     res.json(portfolio);
   } catch (error) {
+    console.error("❌ getPortfolioById:", error);
     res.status(500).json({ message: "Failed to fetch portfolio" });
   }
 };
@@ -69,8 +82,14 @@ exports.getPortfolioById = async (req, res) => {
  */
 exports.updatePortfolio = async (req, res) => {
   try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid portfolio ID" });
+    }
+
     const portfolio = await Portfolio.findOneAndUpdate(
-      { _id: req.params.id, user: req.user._id },
+      { _id: id, user: req.user._id },
       req.body,
       { new: true }
     );
@@ -81,6 +100,7 @@ exports.updatePortfolio = async (req, res) => {
 
     res.json(portfolio);
   } catch (error) {
+    console.error("❌ updatePortfolio:", error);
     res.status(500).json({ message: "Failed to update portfolio" });
   }
 };
@@ -92,8 +112,14 @@ exports.updatePortfolio = async (req, res) => {
  */
 exports.deletePortfolio = async (req, res) => {
   try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid portfolio ID" });
+    }
+
     const portfolio = await Portfolio.findOneAndDelete({
-      _id: req.params.id,
+      _id: id,
       user: req.user._id,
     });
 
@@ -103,6 +129,7 @@ exports.deletePortfolio = async (req, res) => {
 
     res.json({ message: "Portfolio deleted successfully" });
   } catch (error) {
+    console.error("❌ deletePortfolio:", error);
     res.status(500).json({ message: "Failed to delete portfolio" });
   }
 };
@@ -114,16 +141,16 @@ exports.deletePortfolio = async (req, res) => {
  */
 exports.getAllPortfoliosAdmin = async (req, res) => {
   try {
-    const portfolios = await Portfolio.find().populate(
-      "user",
-      "name email role"
-    );
+    const portfolios = await Portfolio.find()
+      .populate("user", "name email role")
+      .sort({ createdAt: -1 });
 
     res.json({
       count: portfolios.length,
       portfolios,
     });
   } catch (error) {
+    console.error("❌ getAllPortfoliosAdmin:", error);
     res.status(500).json({ message: "Failed to fetch portfolios" });
   }
 };
@@ -135,17 +162,22 @@ exports.getAllPortfoliosAdmin = async (req, res) => {
  */
 exports.updatePortfolioStatus = async (req, res) => {
   try {
+    const { id } = req.params;
     const { status } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid portfolio ID" });
+    }
 
     if (!["draft", "published"].includes(status)) {
       return res.status(400).json({ message: "Invalid status value" });
     }
 
     const portfolio = await Portfolio.findByIdAndUpdate(
-      req.params.id,
+      id,
       { status },
       { new: true }
-    );
+    ).populate("user", "name email");
 
     if (!portfolio) {
       return res.status(404).json({ message: "Portfolio not found" });
@@ -156,52 +188,10 @@ exports.updatePortfolioStatus = async (req, res) => {
       portfolio,
     });
   } catch (error) {
+    console.error("❌ updatePortfolioStatus:", error);
     res.status(500).json({ message: "Failed to update portfolio status" });
   }
 };
-
-
-
-
-/**
- * ===============================
- * ADMIN: Update Portfolio Status
- * ===============================
- */
-exports.updatePortfolioStatus = async (req, res) => {
-  try {
-    const { status } = req.body;
-
-    if (!["draft", "published"].includes(status)) {
-      return res.status(400).json({
-        message: "Invalid status value",
-      });
-    }
-
-    const portfolio = await Portfolio.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    ).populate("user", "name email");
-
-    if (!portfolio) {
-      return res.status(404).json({
-        message: "Portfolio not found",
-      });
-    }
-
-    res.json({
-      message: "Portfolio status updated",
-      portfolio,
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: "Failed to update portfolio status",
-    });
-  }
-};
-
-
 
 /**
  * ===============================
@@ -219,8 +209,38 @@ exports.getPublishedPortfolios = async (req, res) => {
       portfolios,
     });
   } catch (error) {
-    res.status(500).json({
-      message: "Failed to fetch published portfolios",
-    });
+    console.error("❌ getPublishedPortfolios:", error);
+    res.status(500).json({ message: "Failed to fetch published portfolios" });
+  }
+};
+
+/**
+ * ===============================
+ * PUBLIC: Get Published Portfolio by ID
+ * ===============================
+ */
+exports.getPublishedPortfolioById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid portfolio ID" });
+    }
+
+    const portfolio = await Portfolio.findOne({
+      _id: id,
+      status: "published",
+    }).populate("user", "name email");
+
+    if (!portfolio) {
+      return res
+        .status(404)
+        .json({ message: "Published portfolio not found" });
+    }
+
+    res.json(portfolio);
+  } catch (error) {
+    console.error("❌ getPublishedPortfolioById:", error);
+    res.status(500).json({ message: "Failed to fetch portfolio" });
   }
 };

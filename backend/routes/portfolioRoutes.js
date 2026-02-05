@@ -9,19 +9,37 @@ const {
   getMyPortfolios,
   updatePortfolioStatus,
   getPublishedPortfolios,
+  getPublishedPortfolioById, // ✅ REQUIRED
 } = require("../controllers/portfolioController");
 
-// 🌍 PUBLIC — no auth
+/**
+ * ===============================
+ * 🌍 PUBLIC ROUTES (NO AUTH)
+ * ===============================
+ */
+
+// List all published portfolios
 router.get("/public", getPublishedPortfolios);
 
-// 🔐 Everything below requires authentication
+// Get single published portfolio by ID
+router.get("/public/:id", getPublishedPortfolioById);
+
+/**
+ * ===============================
+ * 🔐 AUTHENTICATED ROUTES
+ * ===============================
+ */
 router.use(authMiddleware);
 
-// 👤 USER routes
+/**
+ * 👤 USER ROUTES
+ */
 router.post("/", createPortfolio);
 router.get("/", getMyPortfolios);
 
-// 👑 ADMIN routes
+/**
+ * 👑 ADMIN ROUTES
+ */
 router.patch(
   "/admin/:id/status",
   roleMiddleware("admin"),
