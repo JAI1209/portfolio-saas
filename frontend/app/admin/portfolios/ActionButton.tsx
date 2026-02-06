@@ -1,42 +1,44 @@
 "use client";
 
-import { updatePortfolioStatus } from "@/lib/adminApi";
-import { useTransition } from "react";
+type ActionButtonProps = {
+  action: "publish" | "unpublish";
+  onClick: () => void;
+  disabled?: boolean;
+  isLoading?: boolean;
+};
 
-const ADMIN_TOKEN = process.env.NEXT_PUBLIC_ADMIN_TOKEN!;
+export default function ActionButton({
+  action,
+  onClick,
+  disabled,
+  isLoading,
+}: ActionButtonProps) {
+  const isPublish = action === "publish";
+  const label = isLoading
+    ? isPublish
+      ? "Publishing..."
+      : "Unpublishing..."
+    : isPublish
+      ? "Publish"
+      : "Unpublish";
 
-export function ActionButton({
-  id,
-  status,
-  onStatusChange,
-}: {
-  id: string;
-  status: "draft" | "published";
-  onStatusChange: (newStatus: "draft" | "published") => void;
-}) {
-  const [isPending, startTransition] = useTransition();
-
-  const toggleStatus = () => {
-    const nextStatus =
-      status === "draft" ? "published" : "draft";
-
-    startTransition(async () => {
-      await updatePortfolioStatus(id, nextStatus, ADMIN_TOKEN);
-      onStatusChange(nextStatus);
-    });
-  };
+  const baseClasses =
+    "rounded-full px-3 py-1 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60";
+  const colorClasses = isPublish
+    ? "bg-emerald-400/90 text-slate-950 hover:bg-emerald-300"
+    : "bg-amber-400/90 text-slate-950 hover:bg-amber-300";
 
   return (
     <button
-      onClick={toggleStatus}
-      disabled={isPending}
-      className="px-4 py-2 rounded bg-black text-white hover:bg-gray-800 disabled:opacity-50"
+      className={`${baseClasses} inline-flex items-center gap-2 ${colorClasses}`}
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
     >
-      {isPending
-        ? "Updating..."
-        : status === "draft"
-        ? "Publish"
-        : "Unpublish"}
+      {isLoading ? (
+        <span className="h-3 w-3 animate-spin rounded-full border-2 border-slate-900/30 border-t-slate-900" />
+      ) : null}
+      {label}
     </button>
   );
 }

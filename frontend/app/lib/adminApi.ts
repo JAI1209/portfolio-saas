@@ -1,53 +1,87 @@
-const API_BASE_URL = "http://localhost:5000";
+const parseJsonSafe = async (response: Response) => {
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+};
 
-/**
- * =========================
- * ADMIN: FETCH ALL PORTFOLIOS
- * =========================
- */
-export async function fetchAllPortfoliosAdmin(token: string) {
-  const res = await fetch(`${API_BASE_URL}/api/admin/portfolios`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    cache: "no-store",
+export type AdminPortfolio = {
+  _id: string;
+  title: string;
+  description?: string;
+  status: "draft" | "published";
+  createdAt?: string;
+  user?: {
+    name?: string;
+    email?: string;
+    role?: string;
+  };
+};
+
+type AdminListResponse = {
+  count: number;
+  portfolios: AdminPortfolio[];
+};
+
+export type SessionUser = {
+  name?: string;
+  role?: string;
+};
+
+export async function getSession(): Promise<SessionUser | null> {
+  const response = await fetch("/api/me", {
+    credentials: "include",
   });
 
-  if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.message || "Failed to fetch portfolios");
+  if (response.status === 401) {
+    return null;
   }
 
-  return res.json();
+  if (!response.ok) {
+    const data = await parseJsonSafe(response);
+    const message = data?.message || "Failed to fetch session";
+    throw new Error(message);
+  }
+
+  const data = (await response.json()) as { user?: SessionUser };
+  return data.user ?? null;
 }
 
-/**
- * =========================
- * ADMIN: UPDATE PORTFOLIO STATUS
- * =========================
- */
-export async function updatePortfolioStatus(
-  id: string,
-  status: "draft" | "published",
-  token: string
-) {
-  const res = await fetch(
-    `${API_BASE_URL}/api/portfolios/admin/${id}/status`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ status }),
-    }
-  );
+export async function getAdminPortfolios(): Promise<AdminPortfolio[]> {
+  const response = await fetch("/api/admin/portfolios", {
+    credentials: "include",
+  });
 
-  if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.message || "Failed to update portfolio status");
+  if (!response.ok) {
+    const data = await parseJsonSafe(response);
+    const message = data?.message || "Failed to fetch admin portfolios";
+    throw new Error(message);
   }
 
-  return res.json();
+  const data = (await response.json()) as AdminListResponse;
+  return data.portfolios ?? [];
+}
+
+export async function updatePortfolioStatus(
+  id: string,
+  status: "draft" | "published"
+): Promise<AdminPortfolio> {
+  const response = await fetch(`/api/admin/portfolios/${id}/status`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ status }),
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const data = await parseJsonSafe(response);
+    const message = data?.message || "Failed to update portfolio status";
+    throw new Error(message);
+  }
+
+  const data = (await response.json()) as { portfolio: AdminPortfolio };
+  return data.portfolio;
 }

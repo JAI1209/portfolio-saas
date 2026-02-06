@@ -1,70 +1,150 @@
-import { fetchAllPortfoliosAdmin } from "@/lib/adminApi";
-import { ActionButton } from "./ActionButton";
+"use client";
 
-const ADMIN_TOKEN = process.env.NEXT_PUBLIC_ADMIN_TOKEN!; // dev only
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import AdminTable from "./AdminTable";
+import Toast from "@/app/components/Toast";
+import {
+  AdminPortfolio,
+  getAdminPortfolios,
+  getSession,
+  updatePortfolioStatus,
+} from "@/app/lib/adminApi";
 
-export default async function AdminPortfoliosPage() {
-  const data = await fetchAllPortfoliosAdmin(ADMIN_TOKEN);
-  const portfolios = data.portfolios || [];
+export default function AdminPortfoliosPage() {
+  const router = useRouter();
+  const [portfolios, setPortfolios] = useState<AdminPortfolio[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [adminName, setAdminName] = useState("Admin");
+
+  useEffect(() => {
+    let mounted = true;
+    getSession()
+      .then((user) => {
+        if (!mounted) {
+          return;
+        }
+        if (!user) {
+          router.replace("/login");
+          return;
+        }
+        if (user.name) {
+          setAdminName(user.name);
+        }
+      })
+      .catch(() => {});
+
+    getAdminPortfolios()
+      .then((data) => {
+        if (mounted) {
+          setPortfolios(data);
+        }
+      })
+      .catch((err) => {
+        const message = err instanceof Error ? err.message : "Failed to fetch portfolios";
+        setError(message);
+      })
+      .finally(() => {
+        if (mounted) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [router]);
+
+  const handleToggleStatus = async (portfolio: AdminPortfolio) => {
+    if (busyId) {
+      return;
+    }
+
+    const nextStatus = portfolio.status === "published" ? "draft" : "published";
+    setBusyId(portfolio._id);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const updated = await updatePortfolioStatus(
+        portfolio._id,
+        nextStatus
+      );
+
+      setPortfolios((prev) =>
+        prev.map((item) =>
+          item._id === portfolio._id
+            ? { ...item, status: updated.status }
+            : item
+        )
+      );
+      setSuccess(`Portfolio ${updated.status}`);
+      setTimeout(() => setSuccess(null), 2000);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to update status";
+      setError(message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.replace("/login");
+  };
 
   return (
-    <main className="p-8 max-w-6xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">
-        Admin Dashboard · Portfolios
-      </h1>
+    <div className="min-h-screen">
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10">
+        <header className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+              Admin workspace
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold text-white">
+              Portfolio approvals
+            </h1>
+            <p className="mt-2 text-sm text-slate-400">
+              Welcome back, {adminName}.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 text-sm">
+            <Link
+              className="rounded-full border border-white/15 px-4 py-2 text-white transition hover:border-white/30 hover:bg-white/10"
+              href="/portfolios"
+            >
+              Public view
+            </Link>
+            <button
+              className="rounded-full border border-white/10 px-4 py-2 text-white transition hover:border-white/30 hover:bg-white/10"
+              type="button"
+              onClick={handleLogout}
+            >
+              Log out
+            </button>
+          </div>
+        </header>
 
-      {portfolios.length === 0 ? (
-        <p className="text-gray-500">No portfolios found.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border border-collapse">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border p-3 text-left">Title</th>
-                <th className="border p-3 text-left">Status</th>
-                <th className="border p-3 text-left">Action</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {portfolios.map((portfolio: any) => (
-                <tr key={portfolio._id}>
-                  <td className="border p-3 font-medium">
-                    {portfolio.title}
-                  </td>
-
-                  <td className="border p-3">
-                    <StatusBadge status={portfolio.status} />
-                  </td>
-
-                  <td className="border p-3">
-                    <ActionButton
-                      id={portfolio._id}
-                      status={portfolio.status}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </main>
-  );
-}
-
-/* ---------------- Status Badge ---------------- */
-
-function StatusBadge({ status }: { status: string }) {
-  return (
-    <span
-      className={`px-3 py-1 rounded-full text-sm font-semibold ${
-        status === "published"
-          ? "bg-green-100 text-green-700"
-          : "bg-yellow-100 text-yellow-700"
-      }`}
-    >
-      {status}
-    </span>
+        <main className="mt-10 flex-1">
+          {loading ? (
+            <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-6 text-sm text-slate-300">
+              Loading portfolios...
+            </div>
+          ) : (
+            <AdminTable
+              portfolios={portfolios}
+              busyId={busyId}
+              onToggleStatus={handleToggleStatus}
+            />
+          )}
+        </main>
+        <Toast message={error} variant="error" />
+        <Toast message={success} variant="success" />
+      </div>
+    </div>
   );
 }

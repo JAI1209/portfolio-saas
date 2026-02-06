@@ -1,87 +1,63 @@
-// frontend/app/lib/api.ts
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+if (!API_URL) {
+  throw new Error("NEXT_PUBLIC_API_URL is not set");
+}
 
-export async function fetchPublicPortfolios() {
-  const res = await fetch(
-    `${API_BASE_URL}/api/portfolios/public`,
-    { cache: "no-store" }
-  );
+export type PublicPortfolio = {
+  _id: string;
+  title: string;
+  description?: string;
+  status: "draft" | "published";
+  createdAt?: string;
+  user?: {
+    name?: string;
+    email?: string;
+  };
+};
 
-  if (!res.ok) {
-    throw new Error("Failed to fetch public portfolios");
+type PublicListResponse = {
+  count: number;
+  portfolios: PublicPortfolio[];
+};
+
+const parseJsonSafe = async (response: Response) => {
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+};
+
+export async function getPublishedPortfolios(): Promise<PublicPortfolio[]> {
+  const response = await fetch(`${API_URL}/api/portfolios/public`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    const data = await parseJsonSafe(response);
+    const message = data?.message || "Failed to fetch portfolios";
+    throw new Error(message);
   }
 
-  const data = await res.json();
-
-  // 🔑 normalize API response
+  const data = (await response.json()) as PublicListResponse;
   return data.portfolios ?? [];
 }
 
+export async function getPublishedPortfolioById(
+  id: string
+): Promise<PublicPortfolio> {
+  const response = await fetch(`${API_URL}/api/portfolios/public/${id}`, {
+    cache: "no-store",
+  });
 
-
-
-// ADMIN: fetch all portfolios
-export async function fetchAllPortfoliosAdmin(token: string) {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/portfolios/admin`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      cache: "no-store",
-    }
-  );
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch admin portfolios");
+  if (!response.ok) {
+    const data = await parseJsonSafe(response);
+    const message = data?.message || "Failed to fetch portfolio";
+    const error = new Error(message) as Error & { status?: number };
+    error.status = response.status;
+    throw error;
   }
 
-  return res.json();
-}
-
-// ADMIN: update portfolio status
-export async function updatePortfolioStatus(
-  id: string,
-  status: "draft" | "published",
-  token: string
-) {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/portfolios/admin/${id}/status`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ status }),
-    }
-  );
-
-  if (!res.ok) {
-    throw new Error("Failed to update status");
-  }
-
-  return res.json();
-}
-
-
-
-export async function fetchPublicPortfolioById(id: string) {
-  const API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-
-  const res = await fetch(
-    `${API_BASE_URL}/api/portfolios/public/${id}`,
-    {
-      cache: "no-store",
-    }
-  );
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch portfolio");
-  }
-
-  return res.json();
+  return (await response.json()) as PublicPortfolio;
 }
