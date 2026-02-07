@@ -10,6 +10,15 @@ const parseJsonSafe = async (response: Response) => {
   }
 };
 
+const extractToken = (setCookie: string | null) => {
+  if (!setCookie) {
+    return null;
+  }
+
+  const match = setCookie.match(/token=([^;]+)/);
+  return match ? match[1] : null;
+};
+
 export async function POST(request: Request) {
   if (!API_URL) {
     return NextResponse.json({ message: "Missing API URL" }, { status: 500 });
@@ -17,10 +26,7 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null);
   if (!body?.email || !body?.password) {
-    return NextResponse.json(
-      { message: "Missing credentials" },
-      { status: 400 }
-    );
+    return NextResponse.json({ message: "Missing credentials" }, { status: 400 });
   }
 
   const response = await fetch(`${API_URL}/api/auth/login`, {
@@ -42,40 +48,27 @@ export async function POST(request: Request) {
     );
   }
 
-  const token = data?.token;
+  const cookieHeaders =
+    "getSetCookie" in response.headers
+      ? response.headers.getSetCookie()
+      : [];
+
+  const candidateCookie =
+    cookieHeaders.find((cookie) => cookie.includes("token=")) ||
+    response.headers.get("set-cookie");
+
+  const token = extractToken(candidateCookie) || data?.token || null;
   if (!token) {
     return NextResponse.json({ message: "Missing token" }, { status: 500 });
   }
 
-  const role = data?.user?.role || "user";
-  const name = data?.user?.name || "";
-
-  const res = NextResponse.json({
-    ok: true,
-    user: {
-      name,
-      role,
-    },
-  });
-
-  const isProduction = process.env.NODE_ENV === "production";
-
+  const res = NextResponse.json({ user: data?.user });
   res.cookies.set({
-    name: "auth_token",
+    name: "token",
     value: token,
     httpOnly: true,
     sameSite: "lax",
-    secure: isProduction,
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
-  });
-
-  res.cookies.set({
-    name: "user_name",
-    value: encodeURIComponent(name),
-    httpOnly: false,
-    sameSite: "lax",
-    secure: isProduction,
+    secure: false,
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });

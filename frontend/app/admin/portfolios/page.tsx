@@ -11,6 +11,7 @@ import {
   getSession,
   updatePortfolioStatus,
 } from "@/app/lib/adminApi";
+import { logoutUser } from "@/src/lib/auth";
 
 export default function AdminPortfoliosPage() {
   const router = useRouter();
@@ -93,7 +94,7 @@ export default function AdminPortfoliosPage() {
   };
 
   const handleLogout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
+    await logoutUser();
     router.replace("/login");
   };
 

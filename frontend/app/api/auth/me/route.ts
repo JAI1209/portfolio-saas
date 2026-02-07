@@ -11,22 +11,19 @@ export async function GET() {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
   if (!token) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ message: "Not authenticated" }, { status: 401 });
   }
 
-  const response = await fetch(`${API_URL}/api/portfolios/admin`, {
+  const response = await fetch(`${API_URL}/api/auth/me`, {
     headers: {
       Cookie: `token=${token}`,
     },
   });
 
-  const data = await response.json().catch(() => null);
   if (!response.ok) {
-    return NextResponse.json(
-      { message: data?.message || "Failed to fetch admin portfolios" },
-      { status: response.status }
-    );
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  return NextResponse.json(data, { status: 200 });
+  const data = await response.json();
+  return NextResponse.json(data);
 }

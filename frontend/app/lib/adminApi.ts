@@ -1,4 +1,4 @@
-const parseJsonSafe = async (response: Response) => {
+const parseJsonSafe = async (response) => {
   try {
     return await response.json();
   } catch {
@@ -30,7 +30,7 @@ export type SessionUser = {
 };
 
 export async function getSession(): Promise<SessionUser | null> {
-  const response = await fetch("/api/me", {
+  const response = await fetch("/api/auth/me", {
     credentials: "include",
   });
 
