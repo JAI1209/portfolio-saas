@@ -1,4 +1,4 @@
-const parseJsonSafe = async (response) => {
+const parseJsonSafe = async (response: Response) => {
   try {
     return await response.json();
   } catch {
