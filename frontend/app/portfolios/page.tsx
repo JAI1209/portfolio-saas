@@ -1,4 +1,5 @@
 import Link from "next/link";
+import AdminActions from "./AdminActions";
 import { getPublishedPortfolios } from "@/app/lib/api";
 
 export default async function PortfoliosPage() {
@@ -19,12 +20,9 @@ export default async function PortfoliosPage() {
               Discover approved work from the latest teams.
             </p>
           </div>
-          <Link
-            className="rounded-full border border-white/15 px-4 py-2 text-sm text-white transition hover:border-white/30 hover:bg-white/10"
-            href="/login"
-          >
-            Admin
-          </Link>
+          <div className="flex items-center gap-3 text-sm">
+            <AdminActions />
+          </div>
         </header>
 
         <main className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

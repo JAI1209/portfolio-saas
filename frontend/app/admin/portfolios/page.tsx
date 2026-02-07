@@ -7,6 +7,7 @@ import AdminTable from "./AdminTable";
 import Toast from "@/app/components/Toast";
 import {
   AdminPortfolio,
+  createPortfolio,
   getAdminPortfolios,
   getSession,
   updatePortfolioStatus,
@@ -21,6 +22,9 @@ export default function AdminPortfoliosPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [adminName, setAdminName] = useState("Admin");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -93,6 +97,38 @@ export default function AdminPortfoliosPage() {
     }
   };
 
+  const handleCreate = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!title.trim()) {
+      setError("Title is required.");
+      return;
+    }
+
+    setCreating(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const created = await createPortfolio({
+        title: title.trim(),
+        description: description.trim() || undefined,
+        status: "draft",
+      });
+
+      setPortfolios((prev) => [created, ...prev]);
+      setTitle("");
+      setDescription("");
+      setSuccess("Portfolio created.");
+      setTimeout(() => setSuccess(null), 2000);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to create portfolio";
+      setError(message);
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const handleLogout = async () => {
     await logoutUser();
     router.replace("/login");
@@ -131,6 +167,33 @@ export default function AdminPortfoliosPage() {
         </header>
 
         <main className="mt-10 flex-1">
+          <form
+            onSubmit={handleCreate}
+            className="mb-8 grid gap-4 rounded-3xl border border-white/10 bg-slate-950/60 p-6"
+          >
+            <div className="text-sm font-semibold text-white">Create portfolio</div>
+            <input
+              className="rounded-xl border border-white/10 bg-slate-900/60 px-4 py-3 text-sm text-white outline-none ring-sky-400/40 transition focus:border-sky-400/60 focus:ring-2"
+              placeholder="Portfolio title"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              required
+            />
+            <textarea
+              className="min-h-[110px] rounded-xl border border-white/10 bg-slate-900/60 px-4 py-3 text-sm text-white outline-none ring-sky-400/40 transition focus:border-sky-400/60 focus:ring-2"
+              placeholder="Optional description"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+            />
+            <button
+              className="w-fit rounded-full bg-sky-400 px-5 py-2 text-sm font-semibold text-slate-900 shadow-lg shadow-sky-500/20 transition hover:bg-sky-300 disabled:cursor-not-allowed disabled:bg-sky-300/60"
+              type="submit"
+              disabled={creating}
+            >
+              {creating ? "Creating..." : "Create draft"}
+            </button>
+          </form>
+
           {loading ? (
             <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-6 text-sm text-slate-300">
               Loading portfolios...

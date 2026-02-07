@@ -20,9 +20,10 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await loginUser({ email, password });
+      const data = await loginUser({ email, password });
       setSuccess("Signed in. Redirecting...");
-      router.replace("/dashboard");
+      const role = data?.user?.role || "user";
+      router.replace(role === "admin" ? "/admin/portfolios" : "/dashboard");
     } catch (err) {
       setError(err?.message || "Login failed");
     } finally {

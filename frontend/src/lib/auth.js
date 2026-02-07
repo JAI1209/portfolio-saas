@@ -6,7 +6,7 @@ export function registerUser(data) {
     data?.name ||
     (data?.email ? data.email.split("@")[0] : null) ||
     "User";
-  return apiRequest("/api/auth/register", {
+  return bffRequest("/api/auth/register", {
     method: "POST",
     body: { ...data, name },
   });

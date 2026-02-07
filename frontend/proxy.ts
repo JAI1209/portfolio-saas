@@ -24,23 +24,28 @@ const getRoleFromToken = (token?: string) => {
   }
 };
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const token = request.cookies.get("auth_token")?.value;
+  const token = request.cookies.get("token")?.value;
   const role = getRoleFromToken(token);
 
   if (pathname.startsWith("/admin")) {
-    if (!token || role !== "admin") {
+    if (!token) {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
       url.searchParams.set("next", pathname);
       return NextResponse.redirect(url);
     }
+    if (role !== "admin") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard";
+      return NextResponse.redirect(url);
+    }
   }
 
-  if (pathname === "/login" && token && role === "admin") {
+  if (pathname === "/login" && token) {
     const url = request.nextUrl.clone();
-    url.pathname = "/admin/portfolios";
+    url.pathname = role === "admin" ? "/admin/portfolios" : "/dashboard";
     return NextResponse.redirect(url);
   }
 

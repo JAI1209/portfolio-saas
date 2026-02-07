@@ -63,12 +63,13 @@ export async function POST(request: Request) {
   }
 
   const res = NextResponse.json({ user: data?.user });
+  const isProd = process.env.NODE_ENV === "production";
   res.cookies.set({
     name: "token",
     value: token,
     httpOnly: true,
-    sameSite: "lax",
-    secure: false,
+    sameSite: isProd ? "none" : "lax",
+    secure: isProd,
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });

@@ -29,6 +29,12 @@ export type SessionUser = {
   role?: string;
 };
 
+export type CreatePortfolioInput = {
+  title: string;
+  description?: string;
+  status?: "draft" | "published";
+};
+
 export async function getSession(): Promise<SessionUser | null> {
   const response = await fetch("/api/auth/me", {
     credentials: "include",
@@ -84,4 +90,25 @@ export async function updatePortfolioStatus(
 
   const data = (await response.json()) as { portfolio: AdminPortfolio };
   return data.portfolio;
+}
+
+export async function createPortfolio(
+  input: CreatePortfolioInput
+): Promise<AdminPortfolio> {
+  const response = await fetch("/api/portfolios", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(input),
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const data = await parseJsonSafe(response);
+    const message = data?.message || "Failed to create portfolio";
+    throw new Error(message);
+  }
+
+  return (await response.json()) as AdminPortfolio;
 }

@@ -31,7 +31,13 @@ exports.register = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const userRole = role === "admin" ? "admin" : "user";
+    let userRole = role === "admin" ? "admin" : "user";
+    if (userRole !== "admin") {
+      const adminCount = await User.countDocuments({ role: "admin" });
+      if (adminCount === 0) {
+        userRole = "admin";
+      }
+    }
 
     const user = await User.create({
       name,
@@ -76,6 +82,14 @@ exports.login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    if (user.role !== "admin") {
+      const adminCount = await User.countDocuments({ role: "admin" });
+      if (adminCount === 0) {
+        user.role = "admin";
+        await user.save();
+      }
     }
 
     const token = generateToken(user._id, user.role);
