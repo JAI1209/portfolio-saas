@@ -7,6 +7,7 @@ const roleMiddleware = require("../middleware/roleMiddleware");
 const {
   createPortfolio,
   getMyPortfolios,
+  updateMyPortfolioStatus,
   updatePortfolioStatus,
   getPublishedPortfolios,
   getPublishedPortfolioById,
@@ -23,6 +24,7 @@ router.use(authMiddleware);
 // USER ROUTES
 router.post("/", createPortfolio);
 router.get("/", getMyPortfolios);
+router.patch("/:id/status", updateMyPortfolioStatus);
 
 // ADMIN ROUTES
 router.get("/admin", roleMiddleware("admin"), getAllPortfoliosAdmin);

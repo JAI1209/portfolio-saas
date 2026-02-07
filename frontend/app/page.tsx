@@ -55,7 +55,7 @@ export default function Home() {
                 published work curated.
               </p>
             </div>
-            <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900/80 via-slate-900/40 to-slate-950/90 p-6">
+            <div className="rounded-3xl border border-white/10 bg-linear-to-br from-slate-900/80 via-slate-900/40 to-slate-950/90 p-6">
               <h2 className="text-lg font-semibold text-white">Admin ready</h2>
               <p className="mt-2 text-sm leading-6 text-slate-300">
                 Secure admin routes, role-aware login, and a steady dark UI

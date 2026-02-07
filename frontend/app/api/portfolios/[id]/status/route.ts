@@ -24,7 +24,7 @@ export async function PATCH(
   }
 
   const response = await fetch(
-    `${API_URL}/api/portfolios/admin/${id}/status`,
+    `${API_URL}/api/portfolios/${id}/status`,
     {
       method: "PATCH",
       headers: {

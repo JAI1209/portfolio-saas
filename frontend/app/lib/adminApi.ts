@@ -69,6 +69,21 @@ export async function getAdminPortfolios(): Promise<AdminPortfolio[]> {
   return data.portfolios ?? [];
 }
 
+export async function getMyPortfolios(): Promise<AdminPortfolio[]> {
+  const response = await fetch("/api/portfolios", {
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const data = await parseJsonSafe(response);
+    const message = data?.message || "Failed to fetch portfolios";
+    throw new Error(message);
+  }
+
+  const data = await response.json();
+  return Array.isArray(data) ? data : data?.portfolios ?? [];
+}
+
 export async function updatePortfolioStatus(
   id: string,
   status: "draft" | "published"
@@ -90,6 +105,29 @@ export async function updatePortfolioStatus(
 
   const data = (await response.json()) as { portfolio: AdminPortfolio };
   return data.portfolio;
+}
+
+export async function updateMyPortfolioStatus(
+  id: string,
+  status: "draft" | "published"
+): Promise<AdminPortfolio> {
+  const response = await fetch(`/api/portfolios/${id}/status`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ status }),
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const data = await parseJsonSafe(response);
+    const message = data?.message || "Failed to update portfolio status";
+    throw new Error(message);
+  }
+
+  const data = (await response.json()) as { portfolio?: AdminPortfolio };
+  return data.portfolio ?? (data as AdminPortfolio);
 }
 
 export async function createPortfolio(

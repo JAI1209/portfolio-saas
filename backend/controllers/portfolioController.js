@@ -195,6 +195,44 @@ exports.updatePortfolioStatus = async (req, res) => {
 
 /**
  * ===============================
+ * USER: Update Own Portfolio Status
+ * ===============================
+ */
+exports.updateMyPortfolioStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid portfolio ID" });
+    }
+
+    if (!["draft", "published"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status value" });
+    }
+
+    const portfolio = await Portfolio.findOneAndUpdate(
+      { _id: id, user: req.user._id },
+      { status },
+      { new: true }
+    ).populate("user", "name email");
+
+    if (!portfolio) {
+      return res.status(404).json({ message: "Portfolio not found" });
+    }
+
+    res.json({
+      message: "Portfolio status updated successfully",
+      portfolio,
+    });
+  } catch (error) {
+    console.error("âŒ updateMyPortfolioStatus:", error);
+    res.status(500).json({ message: "Failed to update portfolio status" });
+  }
+};
+
+/**
+ * ===============================
  * PUBLIC: Get Published Portfolios
  * ===============================
  */
